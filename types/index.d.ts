@@ -7,4 +7,5 @@ export interface IUser {
 interface IAuthenticatedUser {
     email: string
     name: string
+    _id: string
 }

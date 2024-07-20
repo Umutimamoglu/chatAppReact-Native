@@ -27,21 +27,20 @@ export const registerUser = async ({
         throw error;
     }
 };
-
 type LoginUserTypes = Omit<IUser, "name">;
-
 export const loginUser = async ({ email, password }: LoginUserTypes) => {
     console.log("Login data:", { email, password }); // E-postayı ve şifreyi kontrol edin
     try {
-        const response = await axiosInstance.post("/users/login", {
+        const response = await axiosInstance.post("/api/users/login", {
             email,
             password,
         });
         console.log("Login response:", response.data); // Yanıt verilerini kontrol edin
+        const _user = response.data; // Dönen veriyi doğrudan kullanın
         const _token = response.data.token;
-        axiosInstance.defaults.headers.common["Authorization"] = _token;
+        axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${_token}`;
         await saveToken(BLOSSOM_TOKEN_NAME, _token);
-        return response.data.user;
+        return _user;
     } catch (error) {
         if (error instanceof AxiosError) {
             console.log("error response data:", error.response?.data);
@@ -53,3 +52,4 @@ export const loginUser = async ({ email, password }: LoginUserTypes) => {
         throw error;
     }
 };
+

@@ -1,56 +1,56 @@
+import React, { useEffect } from 'react';
 import { ThemeProvider } from '@shopify/restyle';
 import theme from './utils/theme';
-
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { SWRConfig } from 'swr';
 import { AppState } from 'react-native';
 import Navigation from './navigation';
-const App = () => {
-  return (
-    // Tema sağlayıcı bileşeni, tüm alt bileşenlerde tema kullanılabilir hale getirir
-    <ThemeProvider theme={theme}>
-      {/* SafeAreaProvider, cihazın güvenli alanlarını yönetir */}
-      <SafeAreaProvider>
-        {/* SWRConfig, SWR kütüphanesi için global yapılandırmayı sağlar */}
-        <SWRConfig
-          value={{
-            // Veri sağlayıcıyı bir Map nesnesi olarak ayarlayın
-            provider: () => new Map(),
-            // Verinin görünürlüğünü her zaman doğru olarak ayarlayın
-            isVisible: () => true,
-            // Uygulamanın odaklandığında veri yenilemesini sağlayın
-            initFocus: (callback) => {
-              let appState = AppState.currentState;
+import { ChatContextProvider } from './src/context/chatContext';
+import useUserGlobalStore from './store/useUserGlobalStore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-              // Uygulama durumu değiştiğinde çalışacak işlev
-              const onAppStateChange = (nextAppState: any) => {
-                // Uygulama arka plandan aktif duruma geçtiğinde geri çağırmayı tetikleyin
+const App = () => {
+  const { user, updateUser } = useUserGlobalStore();
+
+  useEffect(() => {
+    // Kullanıcı bilgilerini temizle
+    const clearUserInfo = async () => {
+      await AsyncStorage.removeItem("chatapp-store"); // AsyncStorage'deki kullanıcı bilgisini sil
+      updateUser(null); // Zustand store'undaki kullanıcı bilgisini güncelle
+    };
+
+    clearUserInfo();
+  }, []);
+
+  // Kullanıcı bilgilerine erişim
+  console.log("Current user ID: ", user?._id);
+
+  return (
+    <ThemeProvider theme={theme}>
+      <SafeAreaProvider>
+        <ChatContextProvider user={user}>
+          <SWRConfig value={{
+            provider: () => new Map(),
+            isVisible: () => true,
+            initFocus: (callback) => {
+              const onAppStateChange = (nextAppState) => {
+                const appState = AppState.currentState;
                 if (appState.match(/inactive|background/) && nextAppState === 'active') {
                   callback();
                 }
-                appState = nextAppState;
               };
-
-              // Uygulama durumu değişikliklerini dinleyen bir abonelik oluşturun
               const subscription = AppState.addEventListener('change', onAppStateChange);
-
-              // Temizleme işlevi: Aboneliği kaldırır
-              return () => {
-                subscription.remove();
-              };
+              return () => subscription.remove();
             },
-          }}
-        >
-          {/* Uygulamanın navigasyon bileşeni */}
-          <Navigation />
-        </SWRConfig>
-        {/* Durum çubuğunu saydam olarak ayarlayın */}
-        <StatusBar translucent />
+          }}>
+            <Navigation />
+          </SWRConfig>
+          <StatusBar translucent />
+        </ChatContextProvider>
       </SafeAreaProvider>
     </ThemeProvider>
   );
-
 };
 
 export default App;
